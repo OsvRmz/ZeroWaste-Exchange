@@ -1,6 +1,3 @@
-// src/api/transactions.js
-// Consumer de transacciones / solicitudes entre usuarios
-// Usa client y handleApiError definidos en src/api/client
 import client, { handleApiError } from './client';
 
 /**

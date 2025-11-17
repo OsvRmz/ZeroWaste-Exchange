@@ -1,4 +1,3 @@
-// items.js
 import client, { handleApiError } from './client';
 
 /**

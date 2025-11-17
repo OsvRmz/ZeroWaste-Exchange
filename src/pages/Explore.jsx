@@ -97,6 +97,17 @@ export default function Explore() {
     return () => { mounted = false; };
   }, []); // ejecutar solo al montar
 
+  // Sync local UI state when URL search params change
+  useEffect(() => {
+    setQueryText(q);
+    setCategory(categoryParam);
+    setTransactionType(transactionTypeParam);
+    setSort(sortParam);
+    setPage(pageParam);
+    setLimit(limitParam);
+  }, [q, categoryParam, transactionTypeParam, sortParam, pageParam, limitParam]);
+
+
   // Toggle favorito (optimista en UI)
   async function handleToggleFavorite(itemId) {
     try {

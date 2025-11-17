@@ -1,4 +1,3 @@
-// src/pages/EditProfile.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMe, updateProfile } from '../api';

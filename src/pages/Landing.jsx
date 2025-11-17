@@ -1,4 +1,3 @@
-// Landing.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import PublicLayout from '../layouts/PublicLayout';

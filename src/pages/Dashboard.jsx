@@ -519,7 +519,7 @@ export default function Dashboard() {
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="text-sm text-green-700">Artículo</div>
-                              <div className={`font-medium text-green-800 ${!tx.active ? 'line-through' : ''}`}>
+                              <div className={`font-medium text-green-800 ${tx.status == "completed" ? 'line-through' : ''}`}>
                                 {tx.item?.title || '—'}
                               </div>
                               <div className="text-xs text-green-700 mt-1">{tx.item?.category} • {tx.item?.condition}</div>
@@ -603,7 +603,7 @@ export default function Dashboard() {
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="text-sm text-green-700">Artículo</div>
-                              <div className={`font-medium text-green-800 ${!tx.active ? 'line-through' : ''}`}>
+                              <div className={`font-medium text-green-800 ${tx.status == "completed" ? 'line-through' : ''}`}>
                                 {tx.item?.title || '—'}
                               </div>
                               <div className="text-xs text-green-700 mt-1">{tx.item?.category} • {tx.item?.condition}</div>

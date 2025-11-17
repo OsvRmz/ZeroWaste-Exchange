@@ -1,4 +1,3 @@
-// src/pages/EditArticle.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getItem, updateItem, deleteItem, getMe } from '../api';

@@ -18,7 +18,7 @@ export function setAuthToken(token) {
   }
 }
 
-// Si al cargar la app ya tienes un token en localStorage, lo colocamos
+// Si al cargar la app ya hay un token en localStorage, lo colocamos
 const savedToken = localStorage.getItem('token');
 if (savedToken) setAuthToken(savedToken);
 
@@ -38,7 +38,7 @@ client.interceptors.response.use(
 
 // helper para normalizar errores (lanzamos para que el componente maneje)
 export function handleApiError(error) {
-  // preferimos message del backend si existe
+  // mostramos message del backend si existe
   const msg = error?.response?.data?.message || error.message || 'Error de conexión';
   const e = new Error(msg);
   e.status = error?.response?.status;

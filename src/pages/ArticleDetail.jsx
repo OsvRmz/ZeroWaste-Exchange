@@ -1,4 +1,3 @@
-// src/pages/ArticleDetail.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -95,7 +94,7 @@ export default function ArticleDetail() {
       try {
         const items = await getMyItems();
         if (!mounted) return;
-        setMyItems(items || []);
+        setMyItems(items.filter(it => it.active !== false) || []);
       } catch (e) {
         setMyItems([]);
       } finally {
