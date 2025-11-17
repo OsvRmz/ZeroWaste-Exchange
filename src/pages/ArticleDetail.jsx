@@ -11,7 +11,7 @@ import {
 } from '../api';
 
 // transactions consumer
-import { createTransactionRequest } from '../api/transactions';
+import { createTransactionRequest, getIncomingRequests, getOutgoingRequests } from '../api/transactions';
 
 export default function ArticleDetail() {
   const { id } = useParams();
@@ -45,6 +45,10 @@ export default function ArticleDetail() {
   // My items (for proposing an item in case of intercambio)
   const [myItems, setMyItems] = useState([]);
   const [loadingMyItems, setLoadingMyItems] = useState(false);
+
+  // Linked transaction (if any) that references this item as proposedItem OR item
+  const [linkedTx, setLinkedTx] = useState(null);
+  const [loadingLinkedTx, setLoadingLinkedTx] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -94,7 +98,8 @@ export default function ArticleDetail() {
       try {
         const items = await getMyItems();
         if (!mounted) return;
-        setMyItems(items.filter(it => it.active !== false) || []);
+        // filtrar solo activos para no mostrar items no disponibles
+        setMyItems((items || []).filter(it => it.active !== false));
       } catch (e) {
         setMyItems([]);
       } finally {
@@ -102,12 +107,55 @@ export default function ArticleDetail() {
       }
     }
 
-    // cargar solo si necesitamos proponer intercambio y el usuario existe
     if (item?.transactionType === 'intercambio') {
       loadMyItems();
     }
     return () => { mounted = false; };
   }, [item]);
+
+  // Buscar transacción relacionada (incoming/outgoing) que reference este item
+  useEffect(() => {
+    if (!item || !currentUser) {
+      setLinkedTx(null);
+      return;
+    }
+    let mounted = true;
+    async function loadLinked() {
+      setLoadingLinkedTx(true);
+      try {
+        // pedimos both incoming & outgoing (endpoints existentes)
+        const [incRes, outRes] = await Promise.all([
+          getIncomingRequests({ page: 1, limit: 100 }),
+          getOutgoingRequests({ page: 1, limit: 100 })
+        ]);
+
+        const inc = (incRes && incRes.requests) ? incRes.requests : (Array.isArray(incRes) ? incRes : []);
+        const out = (outRes && outRes.requests) ? outRes.requests : (Array.isArray(outRes) ? outRes : []);
+
+        const txs = [...inc, ...out];
+
+        // buscamos una tx que incluya este item en proposedItem OR item
+        const found = txs.find(tx => {
+          const proposedId = String(tx.proposedItem?._id || tx.proposedItem?.id || tx.proposedItem || '');
+          const itemId = String(tx.item?._id || tx.item?.id || tx.item || '');
+          const targetId = String(item._id || item.id);
+          // excluir transacciones cerradas
+          if (['cancelled', 'completed', 'rejected'].includes(tx.status)) return false;
+          return proposedId === targetId || itemId === targetId;
+        });
+
+        if (!mounted) return;
+        setLinkedTx(found || null);
+      } catch (e) {
+        if (!mounted) return;
+        setLinkedTx(null);
+      } finally {
+        if (mounted) setLoadingLinkedTx(false);
+      }
+    }
+    loadLinked();
+    return () => { mounted = false; };
+  }, [item, currentUser]);
 
   // Favorito toggle
   async function handleToggleFav() {
@@ -246,6 +294,21 @@ export default function ArticleDetail() {
   // Ownership check
   const isOwner = !!(currentUser && item && String(currentUser._id || currentUser.id) === String(item.owner?._id || item.owner?.id || item.owner));
 
+  // helper: decide label for accept button based on transaction type
+  function getAcceptLabel(tx) {
+    const t = tx?.item?.transactionType || item.transactionType;
+    if (t === 'donación') return 'Aceptar donación';
+    if (t === 'venta') return 'Aceptar compra';
+    if (t === 'intercambio') return 'Aceptar intercambio';
+    return 'Aceptar';
+  }
+
+  // helper: determine if current user is owner in the linked transaction
+  const amOwnerOfLinkedTx = !!(linkedTx && currentUser && String(currentUser._id || currentUser.id) === String(linkedTx.owner?._id || linkedTx.owner?.id || linkedTx.owner));
+
+  // helper: determine if current user is requester in the linked tx
+  const amRequesterOfLinkedTx = !!(linkedTx && currentUser && String(currentUser._id || currentUser.id) === String(linkedTx.requester?._id || linkedTx.requester?.id || linkedTx.requester));
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
@@ -374,8 +437,55 @@ export default function ArticleDetail() {
           </div>
 
           <div className="pt-3 space-y-2">
-            {/* Transaction button: visible only if not owner */}
-            {!isOwner && (
+            {/* If there's a linked transaction referencing this item, show CTA to go to dashboard */}
+            {linkedTx && (
+              <>
+                <div className="text-xs text-green-700/80">Existe una solicitud relacionada:</div>
+
+                {amOwnerOfLinkedTx ? (
+                  <button
+                    onClick={() => {
+                      // owner should see incoming requests; pass openTx so dashboard can open modal (if implemented)
+                      const q = `?tab=transactions&tx=incoming&openTx=${encodeURIComponent(linkedTx._id)}`;
+                      navigate(`/dashboard${q}`);
+                    }}
+                    className="w-full px-3 py-2 rounded bg-green-800 text-white hover:bg-green-900 text-sm"
+                    title="Ir al dashboard para revisar y aceptar la solicitud"
+                    disabled={loadingLinkedTx}
+                  >
+                    {getAcceptLabel(linkedTx)}
+                  </button>
+                ) : amRequesterOfLinkedTx ? (
+                  <button
+                    onClick={() => {
+                      // requester should see their outgoing requests
+                      const q = `?tab=transactions&tx=outgoing&openTx=${encodeURIComponent(linkedTx._id)}`;
+                      navigate(`/dashboard${q}`);
+                    }}
+                    className="w-full px-3 py-2 rounded bg-white border border-green-100 text-green-700 hover:bg-green-50 text-sm"
+                    title="Ir al dashboard para ver tu solicitud"
+                    disabled={loadingLinkedTx}
+                  >
+                    Ver mi solicitud
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      // others go to transactions incoming by default (owner will see it)
+                      const q = `?tab=transactions&tx=incoming&openTx=${encodeURIComponent(linkedTx._id)}`;
+                      navigate(`/dashboard${q}`);
+                    }}
+                    className="w-full px-3 py-2 rounded bg-white border border-green-100 text-green-700 hover:bg-green-50 text-sm"
+                    disabled={loadingLinkedTx}
+                  >
+                    Ver solicitud relacionada
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* Transaction button: visible only if not owner and no linkedTx owner action */}
+            {!isOwner && !amOwnerOfLinkedTx && (
               <button
                 onClick={openRequestModal}
                 className="w-full px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 text-sm"

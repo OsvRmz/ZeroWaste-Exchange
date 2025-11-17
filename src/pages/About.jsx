@@ -7,14 +7,14 @@ export default function About() {
       <header className="mb-6">
         <h1 className="text-2xl font-semibold text-green-800">Acerca del Proyecto</h1>
         <p className="text-green-700/80 mt-2">
-          Este proyecto escolar busca educar sobre la reutilización de objetos y reducir la generación de residuos mediante el intercambio, la donación y la venta responsable.
+          Este proyecto busca educar sobre la reutilización de objetos y reducir la generación de residuos mediante el intercambio, la donación y la venta responsable.
         </p>
       </header>
 
       <section className="bg-white rounded shadow p-6 space-y-4">
         <h2 className="text-xl font-medium text-green-800">Nuestra iniciativa Zero Waste</h2>
         <p className="text-green-700 text-sm">
-          Zero Waste Exchange es una plataforma educativa que permite a los usuarios compartir artículos que ya no usan, fomentando la economía circular y la reutilización. La idea es generar conciencia ambiental mientras se practican hábitos sostenibles de consumo.
+          Zero Waste Exchange es una plataforma gratuita que permite a los usuarios compartir artículos que ya no usan, fomentando la economía circular y la reutilización. La idea es generar conciencia ambiental mientras se practican hábitos sostenibles de consumo.
         </p>
       </section>
 
@@ -28,10 +28,10 @@ export default function About() {
       <section className="bg-white rounded shadow p-6 space-y-4">
         <h2 className="text-xl font-medium text-green-800">Créditos del equipo</h2>
         <ul className="list-disc ml-5 text-green-700 text-sm">
-          <li>Desarrollo: [Nombre del estudiante]</li>
-          <li>Diseño UI/UX: [Nombre del estudiante]</li>
-          <li>Documentación y pruebas: [Nombre del estudiante]</li>
-          <li>Proyecto educativo supervisado por: [Nombre del profesor]</li>
+          <li>Desarrollo: [Emilio Osvaldo Ramirez Morales]</li>
+          <li>Diseño UI/UX: [Castillo Gonzalez Fernando Alfonso, Castro Monroy Eduardo David]</li>
+          <li>Documentación y pruebas: [Emilio Osvaldo Ramirez Morales, Polo Cruz David Alejandro]</li>
+          <li>Proyecto educativo supervisado por: [Emilio Osvaldo Ramirez Morales]</li>
         </ul>
       </section>
 

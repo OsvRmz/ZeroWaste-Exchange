@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getMyItems,
   getMyFavorites,
@@ -18,7 +18,6 @@ import {
 } from '../api/transactions';
 
 import TransactionEmailModal from '../components/TransactionEmailModal';
-
 
 function ItemCard({ item, onEdit, onDelete, onToggleFav, isFavorite }) {
   return (
@@ -95,12 +94,16 @@ function ItemCard({ item, onEdit, onDelete, onToggleFav, isFavorite }) {
   );
 }
 
-
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState('my-items'); // 'my-items' | 'favorites' | 'profile' | 'transactions'
-  const [txSubTab, setTxSubTab] = useState('incoming'); // 'incoming' | 'outgoing'
+  // derive initial tab/subtab from URL params
+  const initialTab = searchParams.get('tab') || 'my-items';
+  const initialTx = searchParams.get('tx') || 'incoming';
+
+  const [activeTab, setActiveTab] = useState(initialTab); // 'my-items' | 'favorites' | 'profile' | 'transactions'
+  const [txSubTab, setTxSubTab] = useState(initialTx); // 'incoming' | 'outgoing'
 
   const [myItems, setMyItems] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -124,6 +127,28 @@ export default function Dashboard() {
   const [modalTx, setModalTx] = useState(null);
   const [modalRole, setModalRole] = useState('requester'); // 'requester' | 'owner'
   const [showModal, setShowModal] = useState(false);
+
+  /* ----------------- Sync URL params -> local state ----------------- */
+  useEffect(() => {
+    const tab = searchParams.get('tab') || 'my-items';
+    const tx = searchParams.get('tx') || 'incoming';
+    if (tab !== activeTab) setActiveTab(tab);
+    if (tx !== txSubTab) setTxSubTab(tx);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  function mergeAndSetParams(next = {}) {
+    const paramsObj = Object.fromEntries([...searchParams.entries()]);
+    Object.keys(next).forEach(k => {
+      const v = next[k];
+      if (v === undefined || v === null || v === '') {
+        delete paramsObj[k];
+      } else {
+        paramsObj[k] = String(v);
+      }
+    });
+    setSearchParams(paramsObj);
+  }
 
   /* ----------------- Load initial profile + stats ----------------- */
   useEffect(() => {
@@ -217,7 +242,6 @@ export default function Dashboard() {
       }
     }
 
-    // load both (cheap) so user can toggle quickly
     loadIncoming();
     loadOutgoing();
 
@@ -291,8 +315,13 @@ export default function Dashboard() {
     setShowModal(true);
   }
 
+  // Helper para eliminar una tx de ambas bandejas por id
+  function removeTxById(txId) {
+    setIncoming(prev => prev.filter(t => String(t._id) !== String(txId)));
+    setOutgoing(prev => prev.filter(t => String(t._id) !== String(txId)));
+  }
+
   async function handleRespond(txId, action) {
-    // action: 'accepted' | 'rejected' | 'completed'
     if (!['accepted', 'rejected', 'completed'].includes(action)) return;
     const confirmMsg = action === 'accepted' ? '¿Aceptar esta solicitud?' :
       action === 'rejected' ? '¿Rechazar esta solicitud?' :
@@ -303,12 +332,18 @@ export default function Dashboard() {
     setError(null);
     try {
       const res = await respondToTransactionRequest(txId, { status: action });
-      // si la respuesta fue "accepted" abrimos modal para coordinar (owner)
-      await refreshTransactions();
+      // si aceptada, mostramos modal y actualizamos listas
       if (action === 'accepted') {
-        // preferir la transacción retornada por el endpoint; si no viene, buscar en incoming
+        await refreshTransactions();
         const tx = res || incoming.find(i => String(i._id) === String(txId)) || outgoing.find(o => String(o._id) === String(txId));
         openModalForTx(tx, 'owner');
+      } else if (action === 'rejected') {
+        // eliminar la solicitud rechazada de ambas bandejas para que "desaparezca por completo"
+        removeTxById(txId);
+      } else if (action === 'completed') {
+        // para completada, hacemos refresh para mostrar el estado actualizado
+        await refreshTransactions();
+        setShowModal(false);
       }
     } catch (err) {
       setError(err?.message || 'Error respondiendo la solicitud');
@@ -323,7 +358,10 @@ export default function Dashboard() {
     setError(null);
     try {
       await cancelTransactionRequest(txId);
-      await refreshTransactions();
+      // eliminar localmente para que desaparezca tanto del receptor como del solicitante
+      removeTxById(txId);
+      // opcional: también intentar refrescar en background para mantener consistencia
+      // await refreshTransactions();
     } catch (err) {
       setError(err?.message || 'Error cancelando la solicitud');
     } finally {
@@ -344,6 +382,22 @@ export default function Dashboard() {
     } finally {
       setActionLoadingId(null);
     }
+  }
+
+  /* ----------------- Navigation / tab handlers (update URL params) ----------------- */
+  function goTab(tabName) {
+    if (tabName === 'transactions') {
+      mergeAndSetParams({ tab: 'transactions', tx: txSubTab || 'incoming' });
+      setActiveTab('transactions');
+    } else {
+      mergeAndSetParams({ tab: tabName, tx: undefined });
+      setActiveTab(tabName);
+    }
+  }
+
+  function goTxSub(tab) {
+    setTxSubTab(tab);
+    mergeAndSetParams({ tab: 'transactions', tx: tab });
   }
 
   /* ----------------- Render ----------------- */
@@ -388,25 +442,25 @@ export default function Dashboard() {
       <div className="mb-4">
         <nav className="flex gap-2 flex-wrap">
           <button
-            onClick={() => setActiveTab('my-items')}
+            onClick={() => goTab('my-items')}
             className={`px-3 py-2 rounded ${activeTab === 'my-items' ? 'bg-green-600 text-white' : 'bg-white border border-green-100 text-green-700'}`}
           >
             Mis publicaciones
           </button>
           <button
-            onClick={() => setActiveTab('favorites')}
+            onClick={() => goTab('favorites')}
             className={`px-3 py-2 rounded ${activeTab === 'favorites' ? 'bg-green-600 text-white' : 'bg-white border border-green-100 text-green-700'}`}
           >
             Favoritos
           </button>
           <button
-            onClick={() => setActiveTab('transactions')}
+            onClick={() => goTab('transactions')}
             className={`px-3 py-2 rounded ${activeTab === 'transactions' ? 'bg-green-600 text-white' : 'bg-white border border-green-100 text-green-700'}`}
           >
             Solicitudes
           </button>
           <button
-            onClick={() => setActiveTab('profile')}
+            onClick={() => goTab('profile')}
             className={`px-3 py-2 rounded ${activeTab === 'profile' ? 'bg-green-600 text-white' : 'bg-white border border-green-100 text-green-700'}`}
           >
             Mi información
@@ -483,13 +537,13 @@ export default function Dashboard() {
             {/* Subtabs: incoming / outgoing */}
             <div className="mb-4 flex gap-2 items-center">
               <button
-                onClick={() => setTxSubTab('incoming')}
+                onClick={() => goTxSub('incoming')}
                 className={`px-3 py-2 rounded ${txSubTab === 'incoming' ? 'bg-green-600 text-white' : 'bg-white border border-green-100 text-green-700'}`}
               >
                 Entrantes
               </button>
               <button
-                onClick={() => setTxSubTab('outgoing')}
+                onClick={() => goTxSub('outgoing')}
                 className={`px-3 py-2 rounded ${txSubTab === 'outgoing' ? 'bg-green-600 text-white' : 'bg-white border border-green-100 text-green-700'}`}
               >
                 Enviadas
@@ -513,78 +567,107 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {incoming.map(tx => (
-                      <div key={tx._id} className="bg-white rounded shadow p-4 flex flex-col sm:flex-row gap-4">
-                        <div className="w-full sm:w-2/3">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="text-sm text-green-700">Artículo</div>
-                              <div className={`font-medium text-green-800 ${tx.status == "completed" ? 'line-through' : ''}`}>
-                                {tx.item?.title || '—'}
+                    {incoming.map(tx => {
+                      const proposed = tx.proposedItem;
+                      const proposedId = proposed?._id || proposed?.id || proposed;
+                      const proposedActive = proposed?.active === false ? false : true; // default true if unknown
+                      return (
+                        <div key={tx._id} className="bg-white rounded shadow p-4 flex flex-col sm:flex-row gap-4">
+                          <div className="w-full sm:w-2/3">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <div className="text-sm text-green-700">Artículo</div>
+                                <div className={`font-medium text-green-800 ${tx.status !== "pending" ? 'line-through' : ''}`}>
+                                  {tx.item?.title || '—'}
+                                </div>
+                                <div className="text-xs text-green-700 mt-1">{tx.item?.category} • {tx.item?.condition}</div>
                               </div>
-                              <div className="text-xs text-green-700 mt-1">{tx.item?.category} • {tx.item?.condition}</div>
+
+                              <div className="text-sm text-green-600">{new Date(tx.createdAt).toLocaleString()}</div>
                             </div>
 
-                            <div className="text-sm text-green-600">{new Date(tx.createdAt).toLocaleString()}</div>
+                            <div className="mt-3 text-sm text-green-700">
+                              <strong>Solicitante:</strong> {tx.requester?.name || 'Usuario'} — <a className="underline text-green-600" href={`mailto:${tx.requester?.email}`}>{tx.requester?.email}</a>
+                            </div>
+
+                            <div className="mt-2 text-sm text-green-700 whitespace-pre-line">
+                              <strong>Mensaje:</strong> {tx.message}
+                            </div>
+
+                            {tx.offeredPrice !== undefined && (
+                              <div className="mt-2 text-sm text-green-700"><strong>Oferta:</strong> ${Number(tx.offeredPrice).toFixed(2)}</div>
+                            )}
+
+                            {tx.proposedItem && (
+                              <div className="mt-2 text-sm text-green-700 flex items-center gap-3">
+                                <div>
+                                  <strong>Propone intercambiar con:</strong>
+                                  <div className="text-sm">{proposed?.title || String(proposedId)}</div>
+                                </div>
+
+                                {/* botón para ver el artículo propuesto */}
+                                {proposedId ? (
+                                  proposedActive ? (
+                                    <Link
+                                      to={`/items/${proposedId}`}
+                                      className="ml-auto inline-block px-3 py-1 text-sm bg-white border border-green-100 text-green-700 rounded hover:bg-green-50"
+                                    >
+                                      Ver artículo propuesto
+                                    </Link>
+                                  ) : (
+                                    <button
+                                      disabled
+                                      title="Artículo no disponible"
+                                      className="ml-auto inline-block px-3 py-1 text-sm bg-gray-100 border border-gray-200 text-gray-500 rounded cursor-not-allowed"
+                                    >
+                                      No disponible
+                                    </button>
+                                  )
+                                ) : null}
+                              </div>
+                            )}
+
+                            <div className="mt-2 text-sm">
+                              <span className="px-2 py-1 rounded bg-green-50 text-green-700">{tx.status}</span>
+                            </div>
                           </div>
 
-                          <div className="mt-3 text-sm text-green-700">
-                            <strong>Solicitante:</strong> {tx.requester?.name || 'Usuario'} — <a className="underline text-green-600" href={`mailto:${tx.requester?.email}`}>{tx.requester?.email}</a>
-                          </div>
+                          <div className="w-full sm:w-1/3 flex flex-col items-stretch justify-center gap-2">
+                            <button
+                              disabled={actionLoadingId === tx._id || tx.status !== 'pending'}
+                              onClick={() => handleRespond(tx._id, 'accepted')}
+                              className="w-full px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                            >
+                              Aceptar
+                            </button>
 
-                          <div className="mt-2 text-sm text-green-700 whitespace-pre-line">
-                            <strong>Mensaje:</strong> {tx.message}
-                          </div>
+                            <button
+                              disabled={actionLoadingId === tx._id || tx.status !== 'pending'}
+                              onClick={() => handleRespond(tx._id, 'rejected')}
+                              className="w-full px-3 py-2 rounded border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                            >
+                              Rechazar
+                            </button>
 
-                          {tx.offeredPrice !== undefined && (
-                            <div className="mt-2 text-sm text-green-700"><strong>Oferta:</strong> ${Number(tx.offeredPrice).toFixed(2)}</div>
-                          )}
+                            <button
+                              disabled={actionLoadingId === tx._id || tx.status === 'completed'}
+                              onClick={() => handleComplete(tx._id)}
+                              className="w-full px-3 py-2 rounded bg-white border border-green-100 text-green-700 hover:bg-green-50 disabled:opacity-50"
+                            >
+                              Marcar completada
+                            </button>
 
-                          {tx.proposedItem && (
-                            <div className="mt-2 text-sm text-green-700"><strong>Propone intercambiar con:</strong> {tx.proposedItem.title}</div>
-                          )}
-
-                          <div className="mt-2 text-sm">
-                            <span className="px-2 py-1 rounded bg-green-50 text-green-700">{tx.status}</span>
+                            <Link to={`/items/${tx.item?._id || tx.item?.id}`} className="w-full text-center text-sm text-green-600 underline">Ver artículo</Link>
                           </div>
                         </div>
-
-                        <div className="w-full sm:w-1/3 flex flex-col items-stretch justify-center gap-2">
-                          {/* Actions allowed: owner can accept/reject/complete; can also cancel */}
-                          <button
-                            disabled={actionLoadingId === tx._id || tx.status !== 'pending'}
-                            onClick={() => handleRespond(tx._id, 'accepted')}
-                            className="w-full px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
-                          >
-                            Aceptar
-                          </button>
-
-                          <button
-                            disabled={actionLoadingId === tx._id || tx.status !== 'pending'}
-                            onClick={() => handleRespond(tx._id, 'rejected')}
-                            className="w-full px-3 py-2 rounded border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                          >
-                            Rechazar
-                          </button>
-
-                          <button
-                            disabled={actionLoadingId === tx._id || tx.status === 'completed'}
-                            onClick={() => handleComplete(tx._id)}
-                            className="w-full px-3 py-2 rounded bg-white border border-green-100 text-green-700 hover:bg-green-50 disabled:opacity-50"
-                          >
-                            Marcar completada
-                          </button>
-
-                          <Link to={`/items/${tx.item?._id || tx.item?.id}`} className="w-full text-center text-sm text-green-600 underline">Ver artículo</Link>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Outgoing */}
+            {/* Outgoing (sin cambios relevantes) */}
             {txSubTab === 'outgoing' && (
               <div>
                 {loadingOutgoing ? (
@@ -603,7 +686,7 @@ export default function Dashboard() {
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="text-sm text-green-700">Artículo</div>
-                              <div className={`font-medium text-green-800 ${tx.status == "completed" ? 'line-through' : ''}`}>
+                              <div className={`font-medium text-green-800 ${tx.status !== "pending" ? 'line-through' : ''}`}>
                                 {tx.item?.title || '—'}
                               </div>
                               <div className="text-xs text-green-700 mt-1">{tx.item?.category} • {tx.item?.condition}</div>
@@ -626,7 +709,6 @@ export default function Dashboard() {
                         </div>
 
                         <div className="w-full sm:w-1/3 flex flex-col items-stretch justify-center gap-2">
-                          {/* Requester can cancel if pending; can mark completed if accepted */}
                           {tx.status === 'pending' && (
                             <button
                               disabled={actionLoadingId === tx._id}

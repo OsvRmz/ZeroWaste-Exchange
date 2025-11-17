@@ -44,8 +44,8 @@ export default function PublicLayout() {
       {/* PIE DE PÁGINA */}
       <footer className="w-full border-t border-green-200">
         <div className="px-6 py-6 text-sm text-green-700 flex flex-col sm:flex-row justify-between">
-          <div>Proyecto escolar — Zero Waste Exchange</div>
-          <div className="mt-2 sm:mt-0">Hecho con ❤️ · Paleta verdosa</div>
+          <div>Proyecto de responsabilidad social — Zero Waste Exchange</div>
+          <div className="mt-2 sm:mt-0">All rights reserved</div>
         </div>
       </footer>
 

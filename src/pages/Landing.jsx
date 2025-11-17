@@ -34,7 +34,8 @@ export default function Landing() {
                         />
                     </div>
                     <p className="text-sm text-green-600 mt-3">
-                        Proyecto escolar — interfaz prototipo. Para contacto usa el email público en los perfiles.
+                        <em>Cuidar el planeta empieza por dar nueva vida a lo que ya tenemos</em> <br /> <br />
+                        -ZeroWaste Exchange
                     </p>
                 </div>
             </div>
