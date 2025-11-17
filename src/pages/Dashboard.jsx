@@ -19,14 +19,18 @@ import {
 
 import TransactionEmailModal from '../components/TransactionEmailModal';
 
+
 function ItemCard({ item, onEdit, onDelete, onToggleFav, isFavorite }) {
   return (
-    <article className="bg-white rounded shadow overflow-hidden flex flex-col">
-      <div className="h-36 bg-green-50/50">
+    <article className={`bg-white rounded shadow overflow-hidden flex flex-col ${!item.active ? 'opacity-50' : ''}`}>
+      <div className="h-36 bg-green-50/50 relative">
         {item.imagePath ? (
           <img src={item.imagePath} alt={item.title} className="w-full h-36 object-cover" />
         ) : (
           <div className="w-full h-36 flex items-center justify-center text-green-400">Sin imagen</div>
+        )}
+        {!item.active && (
+          <span className="absolute top-2 right-2 px-2 py-1 text-xs font-semibold bg-red-100 text-red-700 rounded">Finalizada</span>
         )}
       </div>
 
@@ -54,11 +58,19 @@ function ItemCard({ item, onEdit, onDelete, onToggleFav, isFavorite }) {
               )}
             </button>
 
-            <button onClick={() => onEdit(item._id)} className="px-2 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
+            <button
+              onClick={() => onEdit(item._id)}
+              className="px-2 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+              disabled={!item.active}
+            >
               Editar
             </button>
 
-            <button onClick={() => onDelete(item._id)} className="px-2 py-1 text-sm border border-red-200 text-red-600 rounded hover:bg-red-50">
+            <button
+              onClick={() => onDelete(item._id)}
+              className="px-2 py-1 text-sm border border-red-200 text-red-600 rounded hover:bg-red-50"
+              disabled={!item.active}
+            >
               Eliminar
             </button>
           </div>
@@ -70,7 +82,11 @@ function ItemCard({ item, onEdit, onDelete, onToggleFav, isFavorite }) {
 
         <div className="mt-3 flex items-center justify-between">
           <div className="text-sm text-green-800 font-medium">
-            {item.transactionType === 'venta' ? `$ ${Number(item.price).toFixed(2)}` : (item.transactionType === 'donación' ? 'Donación' : 'Intercambio')}
+            {item.transactionType === 'venta'
+              ? `$ ${Number(item.price).toFixed(2)}`
+              : item.transactionType === 'donación'
+                ? 'Donación'
+                : 'Intercambio'}
           </div>
           <Link to={`/items/${item._id}`} className="text-sm text-green-600 underline">Ver más</Link>
         </div>
@@ -78,6 +94,7 @@ function ItemCard({ item, onEdit, onDelete, onToggleFav, isFavorite }) {
     </article>
   );
 }
+
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -279,7 +296,7 @@ export default function Dashboard() {
     if (!['accepted', 'rejected', 'completed'].includes(action)) return;
     const confirmMsg = action === 'accepted' ? '¿Aceptar esta solicitud?' :
       action === 'rejected' ? '¿Rechazar esta solicitud?' :
-      '¿Marcar como completada? (Esto no marcará el artículo como inactivo automáticamente)';
+        '¿Marcar como completada? (Esto no marcará el artículo como inactivo automáticamente)';
     if (!window.confirm(confirmMsg)) return;
 
     setActionLoadingId(txId);
@@ -502,7 +519,9 @@ export default function Dashboard() {
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="text-sm text-green-700">Artículo</div>
-                              <div className="font-medium text-green-800">{tx.item?.title || '—'}</div>
+                              <div className={`font-medium text-green-800 ${!tx.active ? 'line-through' : ''}`}>
+                                {tx.item?.title || '—'}
+                              </div>
                               <div className="text-xs text-green-700 mt-1">{tx.item?.category} • {tx.item?.condition}</div>
                             </div>
 
@@ -584,7 +603,9 @@ export default function Dashboard() {
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="text-sm text-green-700">Artículo</div>
-                              <div className="font-medium text-green-800">{tx.item?.title || '—'}</div>
+                              <div className={`font-medium text-green-800 ${!tx.active ? 'line-through' : ''}`}>
+                                {tx.item?.title || '—'}
+                              </div>
                               <div className="text-xs text-green-700 mt-1">{tx.item?.category} • {tx.item?.condition}</div>
                             </div>
 
@@ -655,7 +676,7 @@ export default function Dashboard() {
                   <img src={user.photo} alt={user.name} className="w-20 h-20 rounded-full object-cover" />
                 ) : (
                   <div className="w-20 h-20 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-medium">
-                    {user?.name ? user.name.split(' ').map(s => s[0]).slice(0,2).join('').toUpperCase() : 'U'}
+                    {user?.name ? user.name.split(' ').map(s => s[0]).slice(0, 2).join('').toUpperCase() : 'U'}
                   </div>
                 )}
               </div>
