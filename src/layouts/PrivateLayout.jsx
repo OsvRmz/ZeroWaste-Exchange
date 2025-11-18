@@ -90,7 +90,7 @@ export default function PrivateLayout() {
               </svg>
             </button>
 
-            <Link to="/explore" className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-600 to-green-400 flex items-center justify-center shadow-sm">
                 <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
                   <path d="M12 2C8 6 4 8 2 11c2 1 3 4 3 6a6 6 0 0012 0c0-2 1-5 3-6-2-3-6-5-8-9z" fill="currentColor" />

@@ -95,7 +95,7 @@ export default function Impact() {
         <h2 className="text-lg font-medium text-green-800 mb-2">Cómo se calcula (breve)</h2>
         <p className="text-sm text-green-700 mb-3">
           Las cifras son <strong>aproximadas</strong> y se obtienen a partir de las publicaciones activas en la plataforma.
-          El backend asigna un peso estimado (en kg) por categoría y suma esos valores para obtener la estimación total.
+          Nuestro servicio asigna un peso estimado (en kg) por categoría y suma esos valores para obtener la estimación total.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

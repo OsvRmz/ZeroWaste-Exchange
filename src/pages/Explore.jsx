@@ -191,16 +191,68 @@ export default function Explore() {
               onChange={e => { setCategory(e.target.value); setPage(1); }}
             >
               <option value="">Todas las categorías</option>
-              {['Ropa', 'Electrónica', 'Libros', 'Mueble', 'Otros'].map(cat => (
+
+              {[
+                'Ropa',
+                'Electrónica',
+                'Libros',
+                'Muebles',
+                'Herramientas',
+                'Juguetes',
+                'Artículos de cocina',
+                'Material escolar',
+                'Deportes',
+                'Mascotas',
+                'Decoración',
+                'Arte y manualidades',
+                'Partes de computadora',
+                'Partes de electrónicos',
+                'Cables y alambres',
+                'Botellas y contenedores',
+                'Metales reciclables',
+                'Plásticos reciclables',
+                'Madera reutilizable',
+                'Tuberías y PVC',
+                'Componentes sueltos',
+                'Repuestos',
+                'Otros'
+              ].map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
+
+              {/* Categorías extra que existan en BD y no estén en la lista fija */}
               {categories
-                .filter(c => !['Ropa', 'Electrónica', 'Libros', 'Mueble', 'Otros'].includes(c))
+                .filter(c =>
+                  ![
+                    'Ropa',
+                    'Electrónica',
+                    'Libros',
+                    'Muebles',
+                    'Herramientas',
+                    'Juguetes',
+                    'Artículos de cocina',
+                    'Material escolar',
+                    'Deportes',
+                    'Mascotas',
+                    'Decoración',
+                    'Arte y manualidades',
+                    'Partes de computadora',
+                    'Partes de electrónicos',
+                    'Cables y alambres',
+                    'Botellas y contenedores',
+                    'Metales reciclables',
+                    'Plásticos reciclables',
+                    'Madera reutilizable',
+                    'Tuberías y PVC',
+                    'Componentes sueltos',
+                    'Repuestos',
+                    'Otros'
+                  ].includes(c)
+                )
                 .map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
             </select>
-
             <select
               className="px-3 py-2 border rounded"
               value={transactionType}

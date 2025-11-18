@@ -1,16 +1,41 @@
-# React + Vite
+## ZeroWaste Exchange
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ZeroWaste Exchange es una aplicación web tipo marketplace educativo donde los usuarios pueden publicar, explorar e intercambiar artículos mediante anuncios clasificados.
+El sistema incluye un backend en Node.js/Express con MongoDB y un frontend en React (Vite).
 
-Currently, two official plugins are available:
+## Características principales
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Exploración de artículos
+- Búsqueda por texto flexible mediante el parámetro q.
+- Filtros por categoría (category) y tipo de transacción (transactionType).
+- Paginación mediante page y limit.
+- Ordenamiento por fecha de creación (sort=newest o sort=oldest).
+- Por defecto, solo se muestran artículos activos (active = true).
+- Publicaciones activas e inactivas
+- Los dueños pueden activar o desactivar sus artículos.
+- El dashboard del usuario permite obtener artículos propios, incluyendo inactivos
+- El backend valida el acceso para asegurar que solo el dueño pueda ver sus artículos inactivos.
+- Sistema de usuarios
+- Cada publicación pertenece a un usuario registrado.
+- La información visible del dueño del artículo incluye: nombre, ciudad, correo y foto.
+- CRUD de artículos
+- Crear artículos
+- Editar artículos
+- Activar/desactivar artículos
+- Consultar artículos propios y públicos
 
-## React Compiler
+## Tecnologías utilizadas
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Frontend**
 
-## Expanding the ESLint configuration
+- React con Vite
+- React Router
+- Axios
+- TailwindCSS 
+- Context API / Hooks
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+**Backend**
+
+- Node.js con Express
+- MongoDB y Mongoose
+- Control de autenticación (JWT)

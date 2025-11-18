@@ -2,15 +2,35 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getItem, updateItem, deleteItem, getMe } from '../api';
 
-const DEFAULT_CATEGORIES = ['Ropa', 'Electrónica', 'Libros', 'Mueble', 'Otros'];
+const DEFAULT_CATEGORIES = [
+  'Ropa',
+  'Electrónica',
+  'Libros',
+  'Muebles',
+  'Juguetes',
+  'Herramientas',
+  'Accesorios',
+  'Cocina',
+  'Oficina',
+  'Deportes',
+  'Decoración',
+  'Jardín',
+  'Material reciclable',
+  'Arte y manualidades',
+  'Mascotas',
+  'Instrumentos musicales',
+  'Salud y cuidado personal',
+  'Otros'
+];
+
 const CONDITIONS = ['nuevo', 'buen estado', 'usado'];
+
 const TRANSACTION_TYPES = ['donación', 'intercambio', 'venta'];
 
 export default function EditArticle() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -19,11 +39,10 @@ export default function EditArticle() {
   const [transactionType, setTransactionType] = useState('donación');
   const [price, setPrice] = useState('');
   const [location, setLocation] = useState('');
-  const [imageFile, setImageFile] = useState(null); // new upload
-  const [imagePreview, setImagePreview] = useState(null); // preview of new image
-  const [currentImage, setCurrentImage] = useState(null); // existing imagePath from item
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [currentImage, setCurrentImage] = useState(null);
 
-  // UI state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -38,10 +57,11 @@ export default function EditArticle() {
       try {
         const it = await getItem(id);
         if (!mounted) return;
+
         setTitle(it.title || '');
         setDescription(it.description || '');
         setCategory(it.category || '');
-        setCustomCategory(''); // leave empty, prefer category field
+        setCustomCategory('');
         setCondition(it.condition || 'buen estado');
         setTransactionType(it.transactionType || 'donación');
         setPrice(it.price ? String(it.price) : '');
@@ -49,7 +69,6 @@ export default function EditArticle() {
         setCurrentImage(it.imagePath || null);
         setItemOwnerId(it.owner?._id || it.owner || null);
 
-        // try to get current user (to confirm ownership)
         try {
           const me = await getMe();
           if (!mounted) return;
@@ -83,9 +102,7 @@ export default function EditArticle() {
 
   function onImageChange(e) {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-    }
+    if (file) setImageFile(file);
   }
 
   async function handleSave(e) {
@@ -95,6 +112,7 @@ export default function EditArticle() {
     if (!title.trim()) return setError('El título es obligatorio.');
     if (!effectiveCategory()) return setError('Selecciona o escribe una categoría.');
     if (!transactionType) return setError('Selecciona un tipo de transacción.');
+
     if (transactionType === 'venta') {
       const p = Number(price);
       if (isNaN(p) || p <= 0) return setError('Ingresa un precio válido para venta.');
@@ -111,7 +129,8 @@ export default function EditArticle() {
         price: transactionType === 'venta' ? Number(price) : 0,
         location: location.trim()
       };
-      if (imageFile) payload.imageFile = imageFile; // replace image if user uploaded new one
+
+      if (imageFile) payload.imageFile = imageFile;
 
       const updated = await updateItem(id, payload);
       const updatedId = updated?._id || updated?.id || id;
@@ -126,6 +145,7 @@ export default function EditArticle() {
   async function handleDelete() {
     const ok = window.confirm('¿Eliminar esta publicación? (Se marcará como inactiva)');
     if (!ok) return;
+
     setDeleting(true);
     try {
       await deleteItem(id);
@@ -137,8 +157,10 @@ export default function EditArticle() {
     }
   }
 
-  // Ownership check: show edit controls only to owner (but this page is for editing so ideally protected)
-  const isOwner = currentUser && itemOwnerId && String(currentUser._id || currentUser.id) === String(itemOwnerId);
+  const isOwner =
+    currentUser &&
+    itemOwnerId &&
+    String(currentUser._id || currentUser.id) === String(itemOwnerId);
 
   if (loading) {
     return (
@@ -158,12 +180,13 @@ export default function EditArticle() {
   }
 
   if (!isOwner) {
-    // if not owner, inform user (extra safety)
     return (
       <div className="bg-white p-6 rounded shadow text-green-800">
         No tienes permiso para editar esta publicación.
         <div className="mt-4">
-          <Link to="/explore" className="text-sm text-green-600 underline">Volver a explorar</Link>
+          <Link to="/explore" className="text-sm text-green-600 underline">
+            Volver a explorar
+          </Link>
         </div>
       </div>
     );
@@ -174,15 +197,17 @@ export default function EditArticle() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-green-800">Editar publicación</h1>
-          <p className="text-sm text-green-700/80">Actualiza los detalles de tu artículo.</p>
+          <p className="text-sm text-green-700/80">
+            Actualiza los detalles de tu artículo.
+          </p>
         </div>
-        <div className="text-sm text-green-600">
-          Publicado por ti
-        </div>
+        <div className="text-sm text-green-600">Publicado por ti</div>
       </div>
 
       <form onSubmit={handleSave} className="bg-white rounded shadow p-6 space-y-4">
-        {error && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>}
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>
+        )}
 
         <div>
           <label className="text-sm text-green-700 block mb-1">Título *</label>
@@ -190,7 +215,7 @@ export default function EditArticle() {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Ej. Silla de madera en buen estado"
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
+            className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-green-300"
             required
           />
         </div>
@@ -202,7 +227,7 @@ export default function EditArticle() {
             onChange={e => setDescription(e.target.value)}
             rows={4}
             placeholder="Detalles, medidas, marca, estado, etc."
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
+            className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-green-300"
           />
         </div>
 
@@ -211,15 +236,22 @@ export default function EditArticle() {
             <label className="text-sm text-green-700 block mb-1">Categoría *</label>
             <select
               value={category}
-              onChange={e => { setCategory(e.target.value); setCustomCategory(''); }}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
+              onChange={e => {
+                setCategory(e.target.value);
+                setCustomCategory('');
+              }}
+              className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-green-300"
             >
               <option value="">Selecciona una categoría</option>
               {DEFAULT_CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
-            <div className="text-xs text-green-600 mt-1">O escribe una categoría nueva abajo</div>
+            <div className="text-xs text-green-600 mt-1">
+              O escribe una categoría nueva abajo
+            </div>
           </div>
 
           <div>
@@ -227,32 +259,44 @@ export default function EditArticle() {
             <select
               value={condition}
               onChange={e => setCondition(e.target.value)}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
+              className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-green-300"
             >
-              {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+              {CONDITIONS.map(c => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
         <div>
-          <label className="text-sm text-green-700 block mb-1">Categoría personalizada (opcional)</label>
+          <label className="text-sm text-green-700 block mb-1">
+            Categoría personalizada (opcional)
+          </label>
           <input
             value={customCategory}
             onChange={e => setCustomCategory(e.target.value)}
             placeholder="Ej. Juguetes, Herramientas, Decoración..."
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
+            className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-green-300"
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
           <div>
-            <label className="text-sm text-green-700 block mb-1">Tipo de transacción *</label>
+            <label className="text-sm text-green-700 block mb-1">
+              Tipo de transacción *
+            </label>
             <select
               value={transactionType}
               onChange={e => setTransactionType(e.target.value)}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
+              className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-green-300"
             >
-              {TRANSACTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {TRANSACTION_TYPES.map(t => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -261,14 +305,22 @@ export default function EditArticle() {
             <input
               value={price}
               onChange={e => setPrice(e.target.value)}
-              placeholder={transactionType === 'venta' ? 'Precio en MXN' : 'No aplica salvo venta'}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
+              placeholder={
+                transactionType === 'venta'
+                  ? 'Precio en MXN'
+                  : 'No aplica salvo venta'
+              }
               type="number"
-              step="0.01"
               min="0"
+              step="0.01"
+              className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-green-300"
               disabled={transactionType !== 'venta'}
             />
-            {transactionType !== 'venta' && <div className="text-xs text-green-600 mt-1">Precio solo si eliges "venta".</div>}
+            {transactionType !== 'venta' && (
+              <div className="text-xs text-green-600 mt-1">
+                Precio solo si eliges "venta".
+              </div>
+            )}
           </div>
 
           <div>
@@ -277,7 +329,7 @@ export default function EditArticle() {
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder="Ciudad o colonia"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
+              className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-green-300"
             />
           </div>
         </div>
@@ -287,31 +339,59 @@ export default function EditArticle() {
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-start gap-2">
               <input type="file" accept="image/*" onChange={onImageChange} />
-              <div className="text-xs text-green-600">Sube una nueva imagen para reemplazar la actual.</div>
+              <div className="text-xs text-green-600">
+                Sube una nueva imagen para reemplazar la actual.
+              </div>
             </div>
 
             <div className="flex gap-3 items-center">
               {imagePreview ? (
                 <div className="relative">
-                  <img src={imagePreview} alt="preview" className="w-28 h-20 object-cover rounded border" />
-                  <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); }} className="absolute -top-2 -right-2 bg-white rounded-full p-1 text-red-500 shadow">×</button>
+                  <img
+                    src={imagePreview}
+                    alt="preview"
+                    className="w-28 h-20 object-cover rounded border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview(null);
+                    }}
+                    className="absolute -top-2 -right-2 bg-white rounded-full p-1 text-red-500 shadow"
+                  >
+                    ×
+                  </button>
                 </div>
               ) : currentImage ? (
                 <div className="relative">
-                  <img src={currentImage} alt="current" className="w-28 h-20 object-cover rounded border" />
+                  <img
+                    src={currentImage}
+                    alt="current"
+                    className="w-28 h-20 object-cover rounded border"
+                  />
                   <div className="text-xs text-green-600 mt-1">Imagen actual</div>
                 </div>
               ) : (
-                <div className="w-28 h-20 bg-green-50 flex items-center justify-center rounded border text-green-400">Sin imagen</div>
+                <div className="w-28 h-20 bg-green-50 flex items-center justify-center rounded border text-green-400">
+                  Sin imagen
+                </div>
               )}
             </div>
           </div>
-          <div className="text-xs text-green-600 mt-2">Nota: solo se puede reemplazar la imagen subiendo una nueva.</div>
+          <div className="text-xs text-green-600 mt-2">
+            Nota: solo se puede reemplazar la imagen subiendo una nueva.
+          </div>
         </div>
 
         <div className="flex items-center gap-3 justify-between">
           <div>
-            <Link to={`/article/${id}`} className="px-3 py-2 rounded border text-green-700 hover:bg-green-50">Cancelar</Link>
+            <Link
+              to={`/article/${id}`}
+              className="px-3 py-2 rounded border text-green-700 hover:bg-green-50"
+            >
+              Cancelar
+            </Link>
           </div>
 
           <div className="flex items-center gap-3">

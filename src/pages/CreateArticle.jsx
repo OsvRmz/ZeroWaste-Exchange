@@ -2,7 +2,31 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createItem, getMe } from '../api';
 
-const DEFAULT_CATEGORIES = ['Ropa', 'Electrónica', 'Libros', 'Mueble', 'Otros'];
+const DEFAULT_CATEGORIES = [
+  'Ropa',
+  'Electrónica',
+  'Libros',
+  'Muebles',
+  'Herramientas',
+  'Juguetes',
+  'Electrodomésticos',
+  'Accesorios de hogar',
+  'Materiales de reciclaje',
+  'Cables y alambres',
+  'Botellas y contenedores',
+  'Tubos PVC',
+  'Metal y fierro',
+  'Plásticos',
+  'Artículos deportivos',
+  'Computación',
+  'Partes y componentes',
+  'Instrumentos musicales',
+  'Decoración',
+  'Cocina',
+  'Mascotas',
+  'Otros'
+];
+
 const CONDITIONS = ['nuevo', 'buen estado', 'usado'];
 const TRANSACTION_TYPES = ['donación', 'intercambio', 'venta'];
 
@@ -13,7 +37,6 @@ export default function CreateArticle() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
-  const [customCategory, setCustomCategory] = useState('');
   const [condition, setCondition] = useState('buen estado');
   const [transactionType, setTransactionType] = useState('donación');
   const [price, setPrice] = useState('');
@@ -34,13 +57,14 @@ export default function CreateArticle() {
         if (!mounted) return;
         if (me?.city) setLocation(me.city);
       } catch (e) {
-        // no user or no city — ignore
+        // ignore
       }
     }
     loadMe();
     return () => { mounted = false; };
   }, []);
 
+  // image preview
   useEffect(() => {
     if (!imageFile) {
       setImagePreview(null);
@@ -48,16 +72,12 @@ export default function CreateArticle() {
     }
     const url = URL.createObjectURL(imageFile);
     setImagePreview(url);
-    return () => {
-      URL.revokeObjectURL(url);
-    };
+    return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
   function onImageChange(e) {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-    }
+    if (file) setImageFile(file);
   }
 
   function removeImage() {
@@ -66,7 +86,7 @@ export default function CreateArticle() {
   }
 
   function effectiveCategory() {
-    return customCategory.trim() !== '' ? customCategory.trim() : category;
+    return category;
   }
 
   async function handleSubmit(e) {
@@ -75,7 +95,7 @@ export default function CreateArticle() {
 
     // validation
     if (!title.trim()) return setError('El título es obligatorio.');
-    if (!effectiveCategory()) return setError('Selecciona o escribe una categoría.');
+    if (!effectiveCategory()) return setError('Selecciona una categoría.');
     if (!transactionType) return setError('Selecciona un tipo de transacción.');
     if (transactionType === 'venta') {
       const p = Number(price);
@@ -96,14 +116,10 @@ export default function CreateArticle() {
       };
 
       const created = await createItem(payload);
-      // backend returns created item with _id
       const id = created?._id || created?.id;
-      if (id) {
-        navigate(`/items/${id}`);
-      } else {
-        // fallback: go to explore
-        navigate('/explore');
-      }
+
+      if (id) navigate(`/items/${id}`);
+      else navigate('/explore');
     } catch (err) {
       setError(err.message || 'Error creando la publicación.');
     } finally {
@@ -119,7 +135,11 @@ export default function CreateArticle() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded shadow p-6 space-y-4">
-        {error && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>}
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+            {error}
+          </div>
+        )}
 
         <div>
           <label className="text-sm text-green-700 block mb-1">Título *</label>
@@ -143,20 +163,21 @@ export default function CreateArticle() {
           />
         </div>
 
+        {/* CATEGORY + CONDITION */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="text-sm text-green-700 block mb-1">Categoría *</label>
             <select
               value={category}
-              onChange={e => { setCategory(e.target.value); setCustomCategory(''); }}
+              onChange={e => setCategory(e.target.value)}
               className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
+              required
             >
               <option value="">Selecciona una categoría</option>
               {DEFAULT_CATEGORIES.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
-            <div className="text-xs text-green-600 mt-1">O escribe una categoría nueva abajo</div>
           </div>
 
           <div>
@@ -166,21 +187,14 @@ export default function CreateArticle() {
               onChange={e => setCondition(e.target.value)}
               className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
             >
-              {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+              {CONDITIONS.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
           </div>
         </div>
 
-        <div>
-          <label className="text-sm text-green-700 block mb-1">Categoría personalizada (opcional)</label>
-          <input
-            value={customCategory}
-            onChange={e => setCustomCategory(e.target.value)}
-            placeholder="Ej. Juguetes, Herramientas, Decoración..."
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
-          />
-        </div>
-
+        {/* TRANSACTION TYPE + PRICE + CITY */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
           <div>
             <label className="text-sm text-green-700 block mb-1">Tipo de transacción *</label>
@@ -189,7 +203,9 @@ export default function CreateArticle() {
               onChange={e => setTransactionType(e.target.value)}
               className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
             >
-              {TRANSACTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {TRANSACTION_TYPES.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
             </select>
           </div>
 
@@ -216,7 +232,6 @@ export default function CreateArticle() {
               required
             >
               <option value="">Selecciona tu ciudad</option>
-
               <option value="Monterrey">Monterrey</option>
               <option value="San Nicolás de los Garza">San Nicolás de los Garza</option>
               <option value="Guadalupe">Guadalupe</option>
@@ -227,14 +242,13 @@ export default function CreateArticle() {
               <option value="San Pedro Garza García">San Pedro Garza García</option>
             </select>
           </div>
-
         </div>
 
+        {/* IMAGE */}
         <div>
           <label className="text-sm text-green-700 block mb-1">Imagen (opcional)</label>
 
           <div className="flex items-center gap-4">
-            {/* input escondido */}
             <input
               id="imageUpload"
               type="file"
@@ -243,7 +257,6 @@ export default function CreateArticle() {
               className="hidden"
             />
 
-            {/* botón estilado */}
             <label
               htmlFor="imageUpload"
               className="cursor-pointer px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition"
@@ -251,7 +264,6 @@ export default function CreateArticle() {
               Subir imagen
             </label>
 
-            {/* preview */}
             {imagePreview && (
               <div className="relative">
                 <img
@@ -271,11 +283,12 @@ export default function CreateArticle() {
           </div>
 
           <div className="text-xs text-green-600 mt-2">
-            Recomendado: foto clara del artículo. Si no subes imagen, aparecerá placeholder.
+            Recomendado: foto clara del artículo. Si no subes imagen,
+            aparecerá un placeholder.
           </div>
         </div>
 
-
+        {/* BUTTONS */}
         <div className="flex items-center gap-3 justify-end">
           <button
             type="button"
@@ -285,6 +298,7 @@ export default function CreateArticle() {
           >
             Cancelar
           </button>
+
           <button
             type="submit"
             disabled={loading}

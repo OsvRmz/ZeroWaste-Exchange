@@ -271,9 +271,27 @@ app.post('/api/reports', async (req, res) => {
 /* -------------------- MÉTRICAS AMBIENTALES -------------------- */
 const WEIGHT_MAP = {
   'Ropa': 1,
-  'Libros': 1,
   'Electrónica': 2,
-  'Mueble': 5,
+  'Computación': 2,
+  'Libros': 2,
+  'Muebles': 5,
+  'Herramientas': 3,
+  'Juguetes': 1,
+  'Electrodomésticos': 4,
+  'Accesorios de hogar': 2,
+  'Materiales de reciclaje': 1,
+  'Cables y alambres': 1,
+  'Botellas y contenedores': 1,
+  'Tubos PVC': 2,
+  'Metal y fierro': 3,
+  'Plásticos': 1,
+  'Artículos deportivos': 2,
+  'Partes y componentes': 1,
+  'Instrumentos musicales': 3,
+  'Computación': 2,
+  'Decoración': 1,
+  'Cocina': 2,
+  'Mascotas': 1,
   'Otros': 1
 };
 
