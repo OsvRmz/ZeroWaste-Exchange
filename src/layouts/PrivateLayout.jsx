@@ -1,4 +1,3 @@
-// src/layouts/PrivateLayout.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { getMe, logout } from '../api'; // import desde src/api/index.js
@@ -65,7 +64,7 @@ export default function PrivateLayout() {
     if (user.photo) {
       return <img src={user.photo} alt={user.name} className="w-9 h-9 rounded-full object-cover" />;
     }
-    const initials = user.name ? user.name.split(' ').map(s => s[0]).slice(0,2).join('').toUpperCase() : 'U';
+    const initials = user.name ? user.name.split(' ').map(s => s[0]).slice(0, 2).join('').toUpperCase() : 'U';
     return (
       <div className="w-9 h-9 rounded-full bg-green-600 text-white flex items-center justify-center font-medium">
         {initials}
@@ -116,10 +115,10 @@ export default function PrivateLayout() {
 
           {/* Desktop nav */}
           <nav className="hidden sm:flex items-center gap-4">
-            <NavLink to="/explore" className={({isActive}) => `px-3 py-2 rounded-md ${isActive ? 'bg-green-100 text-green-800' : 'text-green-700 hover:bg-green-50'}`}>Explorar</NavLink>
-            <NavLink to="/items/create" className={({isActive}) => `px-3 py-2 rounded-md ${isActive ? 'bg-green-100 text-green-800' : 'text-green-700 hover:bg-green-50'}`}>Crear publicación</NavLink>
-            <NavLink to="/dashboard" className={({isActive}) => `px-3 py-2 rounded-md ${isActive ? 'bg-green-100 text-green-800' : 'text-green-700 hover:bg-green-50'}`}>Dashboard</NavLink>
-            <NavLink to="/metrics" className={({isActive}) => `px-3 py-2 rounded-md ${isActive ? 'bg-green-100 text-green-800' : 'text-green-700 hover:bg-green-50'}`}>Impacto Global</NavLink>
+            <NavLink to="/explore" className={({ isActive }) => `px-3 py-2 rounded-md ${isActive ? 'bg-green-100 text-green-800' : 'text-green-700 hover:bg-green-50'}`}>Explorar</NavLink>
+            <NavLink to="/items/create" className={({ isActive }) => `px-3 py-2 rounded-md ${isActive ? 'bg-green-100 text-green-800' : 'text-green-700 hover:bg-green-50'}`}>Crear publicación</NavLink>
+            <NavLink to="/dashboard" className={({ isActive }) => `px-3 py-2 rounded-md ${isActive ? 'bg-green-100 text-green-800' : 'text-green-700 hover:bg-green-50'}`}>Dashboard</NavLink>
+            <NavLink to="/metrics" className={({ isActive }) => `px-3 py-2 rounded-md ${isActive ? 'bg-green-100 text-green-800' : 'text-green-700 hover:bg-green-50'}`}>Impacto Global</NavLink>
 
             {/* User avatar + dropdown */}
             <div className="relative">
@@ -184,9 +183,52 @@ export default function PrivateLayout() {
             <NavLink to="/explore?transactionType=intercambio" className="px-3 py-2 rounded hover:bg-green-50 text-green-700">Intercambios</NavLink>
             <NavLink to="/explore?transactionType=venta" className="px-3 py-2 rounded hover:bg-green-50 text-green-700">Ventas</NavLink>
             <div className="border-t border-green-100 mt-3 pt-3 text-sm text-green-700">Categorías rápidas</div>
-            <NavLink to="/explore?category=Ropa" className="px-3 py-2 rounded hover:bg-green-50 text-green-700">Ropa</NavLink>
-            <NavLink to="/explore?category=Electrónica" className="px-3 py-2 rounded hover:bg-green-50 text-green-700">Electrónica</NavLink>
-            <NavLink to="/explore?category=Libros" className="px-3 py-2 rounded hover:bg-green-50 text-green-700">Libros</NavLink>
+
+            {/* Nuevo: ver todo */}
+            <NavLink
+              to="/explore"
+              className="px-3 py-2 rounded hover:bg-green-50 text-green-700"
+            >
+              Todos
+            </NavLink>
+
+            {/* Categorías comunes */}
+            <NavLink
+              to="/explore?category=Ropa"
+              className="px-3 py-2 rounded hover:bg-green-50 text-green-700"
+            >
+              Ropa
+            </NavLink>
+
+            <NavLink
+              to="/explore?category=Electrónica"
+              className="px-3 py-2 rounded hover:bg-green-50 text-green-700"
+            >
+              Electrónica
+            </NavLink>
+
+            <NavLink
+              to="/explore?category=Libros"
+              className="px-3 py-2 rounded hover:bg-green-50 text-green-700"
+            >
+              Libros
+            </NavLink>
+
+            {/* Nuevas categorías recomendadas */}
+            <NavLink
+              to="/explore?category=Muebles"
+              className="px-3 py-2 rounded hover:bg-green-50 text-green-700"
+            >
+              Muebles
+            </NavLink>
+
+            <NavLink
+              to="/explore?category=Herramientas"
+              className="px-3 py-2 rounded hover:bg-green-50 text-green-700"
+            >
+              Herramientas
+            </NavLink>
+
           </nav>
         </aside>
 

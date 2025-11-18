@@ -4,7 +4,6 @@ import {
   getItem,
   toggleFavorite,
   deleteItem,
-  createReport,
   getMyFavorites,
   getMe,
   getMyItems // para proponer intercambio (mis artículos)
@@ -12,6 +11,9 @@ import {
 
 // transactions consumer
 import { createTransactionRequest, getIncomingRequests, getOutgoingRequests } from '../api/transactions';
+
+// nuevo: componente de reporte separado
+import ReportModal from '../components/ReportModal';
 
 export default function ArticleDetail() {
   const { id } = useParams();
@@ -25,10 +27,7 @@ export default function ArticleDetail() {
 
   // Report modal state
   const [showReport, setShowReport] = useState(false);
-  const [reportEmail, setReportEmail] = useState('');
-  const [reportReason, setReportReason] = useState('');
-  const [reportLoading, setReportLoading] = useState(false);
-  const [reportSuccess, setReportSuccess] = useState(null);
+  const [reportSuccessMessage, setReportSuccessMessage] = useState(null);
 
   // Transaction request modal state
   const [showRequest, setShowRequest] = useState(false);
@@ -67,7 +66,6 @@ export default function ArticleDetail() {
           const ids = new Set((favs || []).map(i => String(i._id || i.id)));
           setFavIds(ids);
         } catch (e) {
-          // not logged or no favorites — just ignore
           setFavIds(new Set());
         }
 
@@ -124,10 +122,7 @@ export default function ArticleDetail() {
       setLoadingLinkedTx(true);
       try {
         // pedimos both incoming & outgoing (endpoints existentes)
-        const [incRes, outRes] = await Promise.all([
-          getIncomingRequests({ page: 1, limit: 100 }),
-          getOutgoingRequests({ page: 1, limit: 100 })
-        ]);
+        const [incRes, outRes] = await Promise.all([getIncomingRequests({ page: 1, limit: 100 }), getOutgoingRequests({ page: 1, limit: 100 })]);
 
         const inc = (incRes && incRes.requests) ? incRes.requests : (Array.isArray(incRes) ? incRes : []);
         const out = (outRes && outRes.requests) ? outRes.requests : (Array.isArray(outRes) ? outRes : []);
@@ -176,12 +171,10 @@ export default function ArticleDetail() {
         setFavIds(ids);
       }
     } catch (err) {
-      // if unauthorized, redirect to login
       if (err?.status === 401) {
         navigate('/login');
         return;
       }
-      // revert optimistic toggle on error
       setFavIds(prev => {
         const next = new Set(prev);
         if (next.has(String(item._id))) next.delete(String(item._id));
@@ -202,7 +195,6 @@ export default function ArticleDetail() {
     setActionLoading(true);
     try {
       await deleteItem(item._id);
-      // después de eliminar, llevar al explore
       navigate('/explore');
     } catch (err) {
       setError(err.message || 'Error al eliminar');
@@ -213,40 +205,16 @@ export default function ArticleDetail() {
 
   // Open report modal; prefill email if currentUser
   function openReport() {
-    setReportSuccess(null);
-    setReportReason('');
+    setReportSuccessMessage(null);
     setShowReport(true);
-    setReportEmail(currentUser?.email || '');
   }
 
-  async function submitReport(e) {
-    e?.preventDefault();
-    if (!item) return;
-    setReportLoading(true);
-    setReportSuccess(null);
-    try {
-      await createReport({ itemId: item._id, reporterEmail: reportEmail, reason: reportReason });
-      setReportSuccess('Reporte enviado. Gracias por ayudar a mantener la comunidad.');
-      setReportReason('');
-    } catch (err) {
-      setReportSuccess(null);
-      setError(err.message || 'Error enviando el reporte');
-    } finally {
-      setReportLoading(false);
-    }
+  // callback from ReportModal
+  function handleReportSuccess(msg) {
+    setReportSuccessMessage(msg);
+    setShowReport(false); // cierro modal automáticamente al tener éxito (opcional)
   }
 
-  // Open transaction request modal and reset state
-  function openRequestModal() {
-    setRequestSuccess(null);
-    setRequestError(null);
-    setRequestMessage('');
-    setRequestOfferedPrice('');
-    setRequestProposedItemId('');
-    setShowRequest(true);
-  }
-
-  // Submit transaction request
   async function submitRequest(e) {
     e?.preventDefault();
     if (!item) return;
@@ -254,7 +222,6 @@ export default function ArticleDetail() {
       setRequestError('Escribe un mensaje para el propietario.');
       return;
     }
-    // If venta and offeredPrice provided, validate numeric
     if (item.transactionType === 'venta' && requestOfferedPrice) {
       const p = Number(requestOfferedPrice);
       if (isNaN(p) || p <= 0) {
@@ -278,12 +245,9 @@ export default function ArticleDetail() {
         body.proposedItemId = requestProposedItemId;
       }
 
-      const res = await createTransactionRequest(body);
+      await createTransactionRequest(body);
       setRequestSuccess('Solicitud enviada. Revisa tus solicitudes en el dashboard.');
-      // opcional: cerrar modal después de 1.2s
-      setTimeout(() => {
-        setShowRequest(false);
-      }, 1200);
+      setTimeout(() => setShowRequest(false), 1200);
     } catch (err) {
       setRequestError(err.message || 'Error enviando la solicitud');
     } finally {
@@ -294,7 +258,7 @@ export default function ArticleDetail() {
   // Ownership check
   const isOwner = !!(currentUser && item && String(currentUser._id || currentUser.id) === String(item.owner?._id || item.owner?.id || item.owner));
 
-  // helper: decide label for accept button based on transaction type
+  // helpers...
   function getAcceptLabel(tx) {
     const t = tx?.item?.transactionType || item.transactionType;
     if (t === 'donación') return 'Aceptar donación';
@@ -303,11 +267,8 @@ export default function ArticleDetail() {
     return 'Aceptar';
   }
 
-  // helper: determine if current user is owner in the linked transaction
   const amOwnerOfLinkedTx = !!(linkedTx && currentUser && String(currentUser._id || currentUser.id) === String(linkedTx.owner?._id || linkedTx.owner?.id || linkedTx.owner));
-
-  // helper: determine if current user is requester in the linked tx
-  const amRequesterOfLinkedTx = !!(linkedTx && currentUser && String(currentUser._id || currentUser.id) === String(linkedTx.requester?._id || linkedTx.requester?.id || linkedTx.requester));
+  const amRequesterOfLinkedTx = !!(linkedTx && currentUser && String(currentUser._1d || currentUser.id) === String(linkedTx.requester?._id || linkedTx.requester?.id || linkedTx.requester));
 
   if (loading) {
     return (
@@ -338,6 +299,7 @@ export default function ArticleDetail() {
 
   return (
     <div className="space-y-6">
+      {/* ... contenido existente (igual que antes) ... */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-green-800">{item.title}</h1>
@@ -347,7 +309,6 @@ export default function ArticleDetail() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Favorite */}
           <button
             onClick={handleToggleFav}
             disabled={actionLoading}
@@ -365,33 +326,22 @@ export default function ArticleDetail() {
             )}
           </button>
 
-          {/* If owner, show edit/delete */}
           {isOwner && (
             <>
-              <Link to={`/items/${item._id}/edit`} className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 text-sm">
-                Editar
-              </Link>
-              <button
-                onClick={handleDelete}
-                disabled={actionLoading}
-                className="px-3 py-1 rounded border border-red-200 text-red-600 hover:bg-red-50 text-sm"
-              >
-                Eliminar
-              </button>
+              <Link to={`/items/${item._id}/edit`} className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 text-sm">Editar</Link>
+              <button onClick={handleDelete} disabled={actionLoading} className="px-3 py-1 rounded border border-red-200 text-red-600 hover:bg-red-50 text-sm">Eliminar</button>
             </>
           )}
         </div>
       </div>
 
-      {/* Main content: image + details */}
+      {/* ... resto del layout (imagen, descripción, aside con botones) ... */}
       <div className="bg-white rounded shadow overflow-hidden grid grid-cols-1 md:grid-cols-3 gap-6 p-4">
         <div className="md:col-span-2">
           {item.imagePath ? (
             <img src={item.imagePath} alt={item.title} className="w-full h-96 object-cover rounded" />
           ) : (
-            <div className="w-full h-96 bg-green-50 flex items-center justify-center text-green-400 rounded">
-              Sin imagen
-            </div>
+            <div className="w-full h-96 bg-green-50 flex items-center justify-center text-green-400 rounded">Sin imagen</div>
           )}
 
           <section className="mt-4">
@@ -437,7 +387,6 @@ export default function ArticleDetail() {
           </div>
 
           <div className="pt-3 space-y-2">
-            {/* If there's a linked transaction referencing this item, show CTA to go to dashboard */}
             {linkedTx && (
               <>
                 <div className="text-xs text-green-700/80">Existe una solicitud relacionada:</div>
@@ -445,7 +394,6 @@ export default function ArticleDetail() {
                 {amOwnerOfLinkedTx ? (
                   <button
                     onClick={() => {
-                      // owner should see incoming requests; pass openTx so dashboard can open modal (if implemented)
                       const q = `?tab=transactions&tx=incoming&openTx=${encodeURIComponent(linkedTx._id)}`;
                       navigate(`/dashboard${q}`);
                     }}
@@ -458,7 +406,6 @@ export default function ArticleDetail() {
                 ) : amRequesterOfLinkedTx ? (
                   <button
                     onClick={() => {
-                      // requester should see their outgoing requests
                       const q = `?tab=transactions&tx=outgoing&openTx=${encodeURIComponent(linkedTx._id)}`;
                       navigate(`/dashboard${q}`);
                     }}
@@ -471,7 +418,6 @@ export default function ArticleDetail() {
                 ) : (
                   <button
                     onClick={() => {
-                      // others go to transactions incoming by default (owner will see it)
                       const q = `?tab=transactions&tx=incoming&openTx=${encodeURIComponent(linkedTx._id)}`;
                       navigate(`/dashboard${q}`);
                     }}
@@ -484,22 +430,15 @@ export default function ArticleDetail() {
               </>
             )}
 
-            {/* Transaction button: visible only if not owner and no linkedTx owner action */}
             {!isOwner && !amOwnerOfLinkedTx && (
-              <button
-                onClick={openRequestModal}
-                className="w-full px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 text-sm"
-              >
+              <button onClick={() => setShowRequest(true)} className="w-full px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 text-sm">
                 {item.transactionType === 'donación' ? 'Solicitar donación' :
                   item.transactionType === 'intercambio' ? 'Proponer intercambio' :
                   item.transactionType === 'venta' ? 'Solicitar compra' : 'Iniciar transacción'}
               </button>
             )}
 
-            <button
-              onClick={openReport}
-              className="w-full px-3 py-2 rounded bg-white border border-green-200 text-sm text-green-700 hover:bg-green-50"
-            >
+            <button onClick={openReport} className="w-full px-3 py-2 rounded bg-white border border-green-200 text-sm text-green-700 hover:bg-green-50">
               Reportar publicación
             </button>
 
@@ -508,58 +447,24 @@ export default function ArticleDetail() {
         </aside>
       </div>
 
-      {/* Report modal (simple) */}
+      {/* ReportModal: componente separado */}
       {showReport && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-green-800">Reportar publicación</h3>
-              <button onClick={() => setShowReport(false)} className="text-green-600">Cerrar</button>
-            </div>
+        <ReportModal
+          itemId={item._id}
+          initialEmail={currentUser?.email || ''}
+          onClose={() => setShowReport(false)}
+          onSuccess={handleReportSuccess}
+        />
+      )}
 
-            {reportSuccess ? (
-              <div className="p-3 bg-green-50 text-green-700 rounded">
-                {reportSuccess}
-              </div>
-            ) : (
-              <form onSubmit={submitReport} className="space-y-3">
-                <div>
-                  <label className="text-sm text-green-700">Tu correo (para seguimiento)</label>
-                  <input
-                    value={reportEmail}
-                    onChange={e => setReportEmail(e.target.value)}
-                    required
-                    type="email"
-                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm text-green-700">Motivo</label>
-                  <textarea
-                    value={reportReason}
-                    onChange={e => setReportReason(e.target.value)}
-                    required
-                    rows={4}
-                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-300"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button type="submit" disabled={reportLoading} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-                    {reportLoading ? 'Enviando...' : 'Enviar reporte'}
-                  </button>
-                  <button type="button" onClick={() => setShowReport(false)} className="px-3 py-2 rounded border text-green-700">
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
+      {/* mostrar mensaje de éxito si lo hubo */}
+      {reportSuccessMessage && (
+        <div className="p-3 bg-green-50 text-green-700 rounded">
+          {reportSuccessMessage}
         </div>
       )}
 
-      {/* Transaction request modal */}
+      {/* Transaction request modal (sin cambios funcionales) */}
       {showRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white rounded-lg shadow-lg max-w-xl w-full p-6">
@@ -637,9 +542,7 @@ export default function ArticleDetail() {
                   <button type="submit" disabled={requestLoading} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                     {requestLoading ? 'Enviando...' : 'Enviar solicitud'}
                   </button>
-                  <button type="button" onClick={() => setShowRequest(false)} className="px-3 py-2 rounded border text-green-700">
-                    Cancelar
-                  </button>
+                  <button type="button" onClick={() => setShowRequest(false)} className="px-3 py-2 rounded border text-green-700">Cancelar</button>
                 </div>
               </form>
             )}

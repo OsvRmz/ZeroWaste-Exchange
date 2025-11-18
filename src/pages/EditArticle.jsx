@@ -387,7 +387,7 @@ export default function EditArticle() {
         <div className="flex items-center gap-3 justify-between">
           <div>
             <Link
-              to={`/article/${id}`}
+              to={`/items/${id}`}
               className="px-3 py-2 rounded border text-green-700 hover:bg-green-50"
             >
               Cancelar

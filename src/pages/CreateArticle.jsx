@@ -48,7 +48,17 @@ export default function CreateArticle() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // prefill location from user profile if available
+  // modal state
+  const [showPriceModal, setShowPriceModal] = useState(false);
+
+  // if user switches to "venta" → show modal
+  useEffect(() => {
+    if (transactionType === 'venta') {
+      setShowPriceModal(true);
+    }
+  }, [transactionType]);
+
+  // load user city
   useEffect(() => {
     let mounted = true;
     async function loadMe() {
@@ -56,9 +66,7 @@ export default function CreateArticle() {
         const me = await getMe();
         if (!mounted) return;
         if (me?.city) setLocation(me.city);
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
     loadMe();
     return () => { mounted = false; };
@@ -93,7 +101,6 @@ export default function CreateArticle() {
     e?.preventDefault();
     setError(null);
 
-    // validation
     if (!title.trim()) return setError('El título es obligatorio.');
     if (!effectiveCategory()) return setError('Selecciona una categoría.');
     if (!transactionType) return setError('Selecciona un tipo de transacción.');
@@ -129,9 +136,33 @@ export default function CreateArticle() {
 
   return (
     <div className="max-w-3xl mx-auto">
+      {/* MODAL */}
+      {showPriceModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow max-w-md">
+            <h2 className="text-lg font-semibold text-green-800 mb-2">
+              Aviso sobre precios en la plataforma
+            </h2>
+            <p className="text-sm text-green-700 mb-4">
+              Esta plataforma está enfocada en reciclaje y reuso. 
+              La función de venta está permitida, pero los precios deben ser moderados. 
+              Si un artículo se publica con un precio exagerado, los usuarios podrán reportarlo.
+            </p>
+            <button
+              onClick={() => setShowPriceModal(false)}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-green-800">Crear publicación</h1>
-        <p className="text-sm text-green-700/80">Comparte lo que ya no usas: dona, intercambia o vende a bajo precio.</p>
+        <p className="text-sm text-green-700/80">
+          Comparte lo que ya no usas: dona, intercambia o vende a bajo precio.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded shadow p-6 space-y-4">
@@ -292,7 +323,7 @@ export default function CreateArticle() {
         <div className="flex items-center gap-3 justify-end">
           <button
             type="button"
-            onClick={() => navigate('/my-items')}
+            onClick={() => navigate('/explore')}
             className="px-4 py-2 rounded border text-green-700 hover:bg-green-50"
             disabled={loading}
           >
